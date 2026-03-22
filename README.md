@@ -65,6 +65,62 @@ Formal Verification flow using Yosys
 
 <img width="1001" height="805" alt="image" src="https://github.com/user-attachments/assets/b0eff927-d602-4c54-b282-2ef5bf561b63" />
 
+# BMC using SAT Solver - Liveliness Testing 
+While the safety property checking tests for whether an undesirable event will ever happen, the liveness check will wait for a specified event to occur at some point. This is much more heavier on the SAT solver when modelling mathematically.
+Thus this is often given as a Bounded Liveness property in the RTL design itself. 
+The property being tested here is that the design 'will' go into state 00 eventually. 
+
+```tcl
+# 1. Read the Verilog file
+read_verilog -formal counter_liveness.v
+
+# 2. Prepare the design
+prep -top counter
+
+# 3. Run Bounded Model Checking
+# -seq 10 : We check 10 clock cycles. This gives the counter plenty of time 
+#           to prove that our 4-cycle limit is never breached.
+sat -seq 10 -prove-asserts -show-ports
+```
+
+# Optimization and Equivalence Checking
+The top module is a completely combinational circuit here and thus the SAT solver will not unroll the design in time. 
+There will be two scripts that perform different functions at two stages. 
+The first script will  
+  1. A Ysosys script will read the design file
+  2. Perform Logic Optimization for the design
+  3. Generate the optimized RTL
+
+The second script will 
+  1. Load the original RTL
+  2. Load the optimized Netlist
+  3. Create a Miter circuit
+  4. Perform Equivalence check
+
+## OPTIMIZED NETLIST GENERATION bash script 
+
+
+```tcl Optimize.ys 
+# 1. Read the RTL file
+read_verilog top.v
+
+# 2. Prepare the design for processing
+prep -top top
+
+# 3. Perform logic optimization
+# The 'opt' command runs a series of optimization passes (removing dead code, 
+# simplifying boolean expressions, etc.)
+opt
+
+# 4. Generate the optimized netlist
+# We write the result to a new file so we can compare it later
+write_verilog top_opt.v
+```
+
+
+
+
+
 
 
 
