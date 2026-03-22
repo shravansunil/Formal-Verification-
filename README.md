@@ -6,6 +6,7 @@ Formal Verification flow using Yosys
   ### The bash script 
   This script treats the circuit as a transition model and does equivalence checking using the Yosys Sat Solver. This takes the design files which are given in the repo as circuit_A.v and circuit_B.v 
 
+    verify.ys
     ```tcl
     # 1. Load Circuit A and rename the module 'ref' to 'gold' since the design file had it named the same. 
     read_verilog circuit_A.v
@@ -47,6 +48,8 @@ Formal Verification flow using Yosys
   The assertion is given as a part of the design itself within an IFDEF FORMAL block. 
   
   ## The bash script 
+
+  bmc_script.ys
   ```tcl
   # 1. Read the Verilog file
   # The '-formal' flag is crucial here: it tells Yosys to define the 'FORMAL' macro and to translate the assert statements into mathematical rules.
@@ -70,18 +73,21 @@ While the safety property checking tests for whether an undesirable event will e
 Thus this is often given as a Bounded Liveness property in the RTL design itself. 
 The property being tested here is that the design 'will' go into state 00 eventually. 
 
-```tcl
-# 1. Read the Verilog file
-read_verilog -formal counter_liveness.v
+counter_liveness.v is used as the design file here. 
 
-# 2. Prepare the design
-prep -top counter
-
-# 3. Run Bounded Model Checking
-# -seq 10 : We check 10 clock cycles. This gives the counter plenty of time 
-#           to prove that our 4-cycle limit is never breached.
-sat -seq 10 -prove-asserts -show-ports
-```
+    bmc_liveness.ys
+    ```tcl
+    # 1. Read the Verilog file
+    read_verilog -formal counter_liveness.v
+    
+    # 2. Prepare the design
+    prep -top counter
+    
+    # 3. Run Bounded Model Checking
+    # -seq 10 : We check 10 clock cycles. This gives the counter plenty of time 
+    #           to prove that our 4-cycle limit is never breached.
+    sat -seq 10 -prove-asserts -show-ports
+    ```
 
 # Optimization and Equivalence Checking
 The top module is a completely combinational circuit here and thus the SAT solver will not unroll the design in time. 
@@ -97,52 +103,54 @@ The second script will
   3. Create a Miter circuit
   4. Perform Equivalence check
 
+The top.v file is used as the design file here 
+
 ## OPTIMIZED NETLIST GENERATION bash script 
 
 
-```tcl 
-# 1. Read the RTL file
-read_verilog top.v
-
-# 2. Prepare the design for processing
-prep -top top
-
-# 3. Perform logic optimization
-# The 'opt' command runs a series of optimization passes 
-opt
-
-# 4. Generate the optimized netlist and write it to a new file 
-write_verilog top_opt.v
-```
+    ```tcl 
+    # 1. Read the RTL file
+    read_verilog top.v
+    
+    # 2. Prepare the design for processing
+    prep -top top
+    
+    # 3. Perform logic optimization
+    # The 'opt' command runs a series of optimization passes 
+    opt
+    
+    # 4. Generate the optimized netlist and write it to a new file 
+    write_verilog top_opt.v
+    ```
 
 ## EQUIVALENCE CHECKING 
 
-```tcl
-# This script is similar to the first one that we had in the first section 
-# 1. Load the original RTL 
-read_verilog top.v
-rename top gold
-design -stash gold_design
-
-# 2. Load the optimized netlist 
-read_verilog top_opt.v
-rename top gate
-design -stash gate_design
-
-# Bring both into our active workspace
-design -copy-from gold_design gold
-design -copy-from gate_design gate
-
-# 3. Create the miter circuit
-miter -equiv -flatten -make_outputs gold gate miter_top
-
-# Prepare the miter circuit for the solver
-prep -top miter_top
-
-# 4. Perform equivalence checking
-# Notice we DO NOT need -seq or -tempinduct here because there is no clock!
-sat -verify -prove trigger 0 miter_top
-```
+    ```tcl
+    # This script is similar to the first one that we had in the first section 
+    # 1. Load the original RTL 
+    read_verilog top.v
+    rename top gold
+    design -stash gold_design
+    
+    # 2. Load the optimized netlist 
+    read_verilog top_opt.v
+    rename top gate
+    design -stash gate_design
+    
+    # Bring both into our active workspace
+    design -copy-from gold_design gold
+    design -copy-from gate_design gate
+    
+    # 3. Create the miter circuit
+    miter -equiv -flatten -make_outputs gold gate miter_top
+    
+    # Prepare the miter circuit for the solver
+    prep -top miter_top
+    
+    # 4. Perform equivalence checking
+    # Notice we DO NOT need -seq or -tempinduct here because there is no clock!
+    sat -verify -prove trigger 0 miter_top
+    ```
 
 
 
