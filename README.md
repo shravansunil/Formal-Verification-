@@ -4,7 +4,7 @@ Formal Verification flow using Yosys
   ## Equivalence Checking 
 
   ### The bash script 
-  This script treats the circuit as a transition model and does equivalence checking using the Yosys Sat Solver. 
+  This script treats the circuit as a transition model and does equivalence checking using the Yosys Sat Solver. This takes the design files which are given in the repo as circuit_A.v and circuit_B.v 
 
     ```tcl
     # 1. Load Circuit A and rename the module 'ref' to 'gold' since the design file had it named the same. 
@@ -39,4 +39,32 @@ Formal Verification flow using Yosys
     # The -tempinduct flag uses mathematical induction to prove that the sequential circuit remains function for much more than the 20 cycles that it has been time unrolled for
 
     ```
- 
+
+  # BMC using SAT Solver 
+
+  This script makes use of the counter.v file in the repo. 
+  The test that is done here is whether the design goes into the state 11. Since it is technically impossible for the design to not go into 11 without the reset signal being held low, this test will definitely fail.
+  The assertion is given as a part of the design itself within an IFDEF FORMAL block. 
+  
+  ## The bash script 
+  ```tcl
+  # 1. Read the Verilog file
+  # The '-formal' flag is crucial here: it tells Yosys to define the 'FORMAL' macro and to translate the assert statements into mathematical rules.
+  read_verilog -formal counter.v
+  
+  # 2. Prepare the design
+  # This flattens the module and translates it into a state transition system.
+  prep -top counter
+  
+  # 3. Run Bounded Model Checking using the internal SAT solver
+  # -seq 5         : Observes for 5 clock cycles from present (our bound in BMC).
+  # -prove-asserts : Tells the SAT solver to actively try to break our assert rule.
+  # -show-ports    : If the solver breaks the rule, print out the input/output values.
+  sat -seq 5 -prove-asserts -show-ports
+  ```
+
+<img width="1001" height="805" alt="image" src="https://github.com/user-attachments/assets/b0eff927-d602-4c54-b282-2ef5bf561b63" />
+
+
+
+
