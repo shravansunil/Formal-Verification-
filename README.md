@@ -100,7 +100,7 @@ The second script will
 ## OPTIMIZED NETLIST GENERATION bash script 
 
 
-```tcl Optimize.ys 
+```tcl 
 # 1. Read the RTL file
 read_verilog top.v
 
@@ -108,15 +108,41 @@ read_verilog top.v
 prep -top top
 
 # 3. Perform logic optimization
-# The 'opt' command runs a series of optimization passes (removing dead code, 
-# simplifying boolean expressions, etc.)
+# The 'opt' command runs a series of optimization passes 
 opt
 
-# 4. Generate the optimized netlist
-# We write the result to a new file so we can compare it later
+# 4. Generate the optimized netlist and write it to a new file 
 write_verilog top_opt.v
 ```
 
+## EQUIVALENCE CHECKING 
+
+```tcl
+# This script is similar to the first one that we had in the first section 
+# 1. Load the original RTL 
+read_verilog top.v
+rename top gold
+design -stash gold_design
+
+# 2. Load the optimized netlist 
+read_verilog top_opt.v
+rename top gate
+design -stash gate_design
+
+# Bring both into our active workspace
+design -copy-from gold_design gold
+design -copy-from gate_design gate
+
+# 3. Create the miter circuit
+miter -equiv -flatten -make_outputs gold gate miter_top
+
+# Prepare the miter circuit for the solver
+prep -top miter_top
+
+# 4. Perform equivalence checking
+# Notice we DO NOT need -seq or -tempinduct here because there is no clock!
+sat -verify -prove trigger 0 miter_top
+```
 
 
 
