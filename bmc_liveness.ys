@@ -1,0 +1,11 @@
+# 1. Read the Verilog file
+# Added -sv to allow Yosys to parse SystemVerilog features if needed later
+read_verilog -sv -formal counter_liveness.v
+
+# 2. Prepare the design
+prep -top counter
+
+# 3. Run Bounded Model Checking
+# -seq 10 : We check 10 clock cycles. This gives the counter plenty of time 
+#           to prove that our 4-cycle limit is never breached.
+sat -seq 10 -prove-asserts -show-ports

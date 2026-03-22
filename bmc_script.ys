@@ -1,0 +1,14 @@
+# 1. Read the Verilog file
+# The '-formal' flag is crucial here: it tells Yosys to define the 'FORMAL' macro
+# and to translate the 'assert' statements into mathematical rules.
+read_verilog -formal counter.v
+
+# 2. Prepare the design
+# This flattens the module and translates it into a state transition system.
+prep -top counter
+
+# 3. Run Bounded Model Checking using the internal SAT solver
+# -seq 5         : Unrolls the clock by 5 cycles (our 'Bound' in BMC).
+# -prove-asserts : Tells the SAT solver to actively try to break our 'assert' rule.
+# -show-ports    : If the solver breaks the rule, print out the input/output values.
+sat -seq 5 -prove-asserts -show-ports
