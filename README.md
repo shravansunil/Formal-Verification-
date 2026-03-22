@@ -6,11 +6,13 @@ Formal Verification flow using Yosys
 ### The bash script 
 This script treats the circuit as a transition model and does equivalence checking using the Yosys Sat Solver. 
 
+'''tcl
 # 1. Load Circuit A
 read_verilog circuit_A.v
 # Rename the module 'ref' to 'gold' so we can identify it
 rename ref gold
 design -stash A
+'''
 
 # 2. Load Circuit B
 read_verilog circuit_B.v
